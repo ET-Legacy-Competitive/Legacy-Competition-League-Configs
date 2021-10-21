@@ -1,0 +1,688 @@
+// GLOBAL ACCUMS
+// =============
+//
+// GLOBALACCUM 1 ALLIED CP:	0-DESTROYED; 1-BUILT
+// GLOBALACCUM 2 ALLIED SPAWN CABINETS: 0-DISABLED; 1-ENABLED
+
+game_manager
+{
+	spawn
+	{
+		wm_axis_respawntime 30
+		wm_allied_respawntime 20
+		wm_number_of_objectives 5
+		wm_set_round_timelimit 15
+		wm_set_defending_team 0
+		wm_setwinner 0
+		
+		remapshader "models/mapobjects/tanks_sd/churchill_flat"					"models/mapobjects/etl_tanks/churchill_temp"
+		remapshader "models/mapobjects/tanks_sd/bits_l"							"models/mapobjects/etl_tanks/churchill_temp_tracks"
+		remapshader "models/mapobjects/tanks_sd/bits_r"							"models/mapobjects/etl_tanks/churchill_temp_tracks"
+		remapshaderflush
+
+		//Take docs
+		wm_objective_status 1 1 0
+		wm_objective_status 1 0 0
+		//Cap docs
+		wm_objective_status 2 1 0
+		wm_objective_status 2 0 0
+		//CP
+		wm_objective_status 3 1 0
+		wm_objective_status 3 0 0
+		//Doors
+		wm_objective_status 4 1 0
+		wm_objective_status 4 0 0
+		//Maindoor
+		wm_objective_status 5 1 0
+		wm_objective_status 5 0 1
+
+		//main objective is to cap docs
+		wm_set_main_objective 2 1
+		wm_set_main_objective 2 0
+		
+		//====OPTIONAL SETTINGS==============================================================
+		// Toggle the line of the respective setting you want to change by (un-)commenting.
+		//
+		// globalaccum 2 set 1						// Allied spawn cabinets. Disabled by default.
+		//===================================================================================
+
+		wait 4000
+		// *----------------------------------- vo ------------------------------------------*
+		wm_addteamvoiceannounce 0 "adlernest_axis_controls_defend"
+		wm_addteamvoiceannounce 1 "adlernest_allies_controls_destroy"
+		wm_addteamvoiceannounce 1 "allies_hq_compost_construct"
+
+		wm_teamvoiceannounce 0 "adlernest_axis_controls_defend"
+		wm_teamvoiceannounce 1 "adlernest_allies_controls_destroy"
+		wm_teamvoiceannounce 1 "allies_hq_compost_construct"
+		// *---------------------------------------------------------------------------------*
+
+		wait 500
+		trigger tank_turret shoot_wall
+	}
+}
+
+documents
+{
+    trigger stolen 
+    {
+    	setstate documents_CMM invisible //HIDE COMMANDMAP MARKER
+	}
+	
+	trigger dropped
+	{
+		// *----------------------------------- vo ------------------------------------------*
+		wm_teamvoiceannounce 1 "allies_hq_objective_lost"
+		// *---------------------------------------------------------------------------------*
+	}
+	
+	trigger returned
+	{
+		setstate documents_CMM default //SHOW COMMANDMAP MARKER
+	} 
+	
+	trigger captured
+	{
+		wm_setwinner 1
+		wm_objective_status 2 1 1
+		wm_objective_status 2 0 2
+		// *----------------------------------- vo ------------------------------------------*
+		wm_teamvoiceannounce 0 "axis_hq_objective_lost"
+		wm_teamvoiceannounce 1 "allies_hq_objective_captured"
+		wm_announce "Allied team has transmitted the documents!"
+		// *---------------------------------------------------------------------------------*
+		
+		remapshader "models/mapobjects/tanks_sd/churchill_flat"					"models/mapobjects/tanks_sd/churchill_flat"	
+		remapshader "models/mapobjects/tanks_sd/bits_l"							"models/mapobjects/tanks_sd/bits_l"
+		remapshader "models/mapobjects/tanks_sd/bits_r"							"models/mapobjects/tanks_sd/bits_r"	
+		remapshaderflush
+		
+		wait 100
+		wm_endround
+	}
+}
+
+tank_turret
+{
+	trigger shoot_wall
+	{
+		stopsound
+		playsound sound/vehicles/tank/turret_spin.wav looping volume 155 // ROTATE TURRET
+		
+		faceangles 0 150 0 1000
+		
+		stopsound
+		playsound sound/vehicles/tank/turret_end.wav volume 135 // STOP TURRET
+		
+		playsound sound/vehicles/tank/tank_fire.wav volume 560 // SHOOT
+		alertentity side_wall_boom
+		setstate side_wall invisible
+		alertentity side_wall_rubble
+	}
+}
+
+allied_cp
+{
+	spawn
+	{
+		wait 400
+		constructible_class 2
+
+		setstate allied_cp_model invisible
+		setstate allied_cp_destroyed invisible
+		setstate allied_cp_destroyed_model invisible
+		setstate cp_wobj invisible
+		// setstate cp_spawns invisible
+		disablespeaker allied_compost_sound
+	}
+	
+	buildstart
+	{
+		setstate allied_cp_closed_model invisible
+		setstate allied_cp_closed invisible
+		setstate allied_cp_destroyed invisible
+		setstate allied_cp_destroyed_model invisible
+		setstate allied_cp_model underconstruction
+	}
+
+	decayed
+	{
+		setstate allied_cp_closed_model default
+		setstate allied_cp_closed default
+		setstate allied_cp_model invisible
+	}
+
+	built
+	{
+		globalaccum 6 set 1 //ALLIED CP BUILT
+		setstate allied_cp_model default
+		setstate allied_cp default
+
+        // *----------------------------------- vo ------------------------------------------*
+		wm_announce	"Allied Command Post constructed. Charge speed increased!"
+		wm_teamvoiceannounce 0 "axis_hq_compost_constructed_allies"
+		wm_teamvoiceannounce 1 "allies_hq_compost_constructed"
+
+		wm_removeteamvoiceannounce 1 "allies_hq_compost_construct"
+		// *----------------------------------- vo ------------------------------------------*
+
+		setchargetimefactor 1 soldier 0.75
+		setchargetimefactor 1 lieutenant 0.75
+		setchargetimefactor 1 medic 0.75
+		setchargetimefactor 1 engineer 0.75
+		setchargetimefactor 1 covertops 0.75
+		sethqstatus 1 1
+		
+		wm_objective_status 3 0 2
+		wm_objective_status 3 1 1
+
+		setstate cp_wobj default
+		// setstate cp_spawns default
+		alertentity cp_spawns
+
+		enablespeaker allied_compost_sound
+      
+        // If first time, then set new spawn as default
+        accum 3 abort_if_equal 1
+        accum 3 set 1      
+      
+        setautospawn    "CP Spawn"   1
+	}
+
+	death
+	{
+		globalaccum 6 set 0 //ALLIED CP DESTROYED
+		setstate allied_cp_model invisible
+		setstate allied_cp invisible
+		setstate allied_cp_destroyed default
+		setstate allied_cp_destroyed_model default
+      
+		// *----------------------------------- vo ------------------------------------------*    
+		wm_announce "Axis team has destroyed the Allied Command Post!"
+		wm_addteamvoiceannounce 1 "allies_hqt_compost_construc"
+		wm_teamvoiceannounce 1 "allies_hq_compost_damaged"
+		// *----------------------------------- vo ------------------------------------------*
+
+		setchargetimefactor 1 soldier 1
+		setchargetimefactor 1 lieutenant 1
+		setchargetimefactor 1 medic 1
+		setchargetimefactor 1 engineer 1
+		setchargetimefactor 1 covertops 1
+		sethqstatus 1 0
+		
+		wm_objective_status 3 0 0
+		wm_objective_status 3 1 0		
+
+		setstate cp_wobj invisible
+		// setstate cp_spawns invisible
+		alertentity cp_spawns
+
+		disablespeaker allied_compost_sound
+	}
+}
+
+door_controls
+{
+	spawn
+	{
+		wait 200
+		constructible_class 3
+		setstate door_controls_debris invisible
+		setstate door_controls_smoke invisible
+	}
+	death
+	{
+		setstate door_controls_debris default
+		setstate door_controls_smoke default
+		trigger generator_pistons3 stop
+		trigger generator_pistons4 stop
+		
+		wm_announce "The Doors are opening!!"
+		
+		trigger phasedoor1 open
+		trigger phasedoor2 open
+						
+		wm_objective_status 4 1 1		
+		wm_objective_status 4 0 2
+				
+		// *----------------------------------- vo ------------------------------------------*
+		wm_teamvoiceannounce 1 "allies_hq_objective_destroyed"
+
+		wm_removeteamvoiceannounce 0 "adlernest_axis_controls_defend"
+		wm_removeteamvoiceannounce 1 "adlernest_allies_controls_destroy"
+		
+		// "Construct the command post!" voice over, unless its already been done.
+        globalaccum 6 abort_if_equal 1
+        		
+		wm_teamvoiceannounce 1 "allies_hq_compost_construct"
+		// *---------------------------------------------------------------------------------*
+	}
+}
+
+phasedoor1
+{
+	spawn
+	{
+		wait 200
+		gotomarker phasedoor1_closed 1000
+	}
+	
+	trigger open
+	{
+		wait 500
+		playsound sound/movers/misc/garage_door_start_01.wav
+		wait 400
+		playsound sound/movers/misc/garage_door_loop_01.wav looping forever
+		gotomarker phasedoor1_open 80 wait
+		stopsound
+		playsound sound/movers/misc/garage_door_end_01.wav
+	}
+}
+
+phasedoor2
+{
+	spawn
+	{
+		wait 200
+		gotomarker phasedoor2_closed 1000
+	}
+	
+	trigger open
+	{
+		wait 500
+		playsound sound/movers/misc/garage_door_start_01.wav
+		wait 400
+		playsound sound/movers/misc/garage_door_loop_01.wav looping forever
+		gotomarker phasedoor2_open 80 wait
+		stopsound
+		playsound sound/movers/misc/garage_door_end_01.wav
+	}
+}
+
+maindoor_hint
+{
+	activate
+	{
+		trigger maindoor_lever_1 activate
+		trigger maindoor_lever_2 activate
+	}
+}
+
+maindoor_lever_1
+{
+	// ACCUM 0:	MAIN DOORS 0-CLOSED; 1-OPEN
+	spawn
+	{
+		wait 200
+		gotomarker maindoor_lever_1_open 16 wait
+		gotomarker maindoor_lever_1_closed 16 wait
+	}
+	
+	trigger activate
+	{
+		setstate maindoor_hint invisible
+		accum 0 trigger_if_equal 0 maindoor_lever_1 open		// TRIGGER_IF_CLOSED
+		accum 0 trigger_if_equal 1 maindoor_lever_1 close		// TRIGGER_IF_OPEN
+	}	
+	
+	trigger close
+	{
+		halt
+		playsound sound/movers/misc/garage_door_start_01.wav  volume 255
+		gotomarker maindoor_lever_1_closed 16 wait
+		accum 0 set 0	// CLOSED
+		stopsound
+	}
+	
+	trigger open
+	{
+		playsound sound/movers/misc/garage_door_start_01.wav  volume 255
+		gotomarker maindoor_lever_1_open 16 wait
+		accum 0 set 1		// OPEN
+		stopsound
+	}
+}
+
+maindoor_lever_2
+{
+	// ACCUM 0:	MAIN DOORS 0-CLOSED; 1-OPEN
+	spawn
+	{
+		wait 200
+		gotomarker maindoor_lever_2_open 16 wait
+		gotomarker maindoor_lever_2_closed 16 wait
+	}
+	
+	trigger activate
+	{
+		setstate maindoor_hint invisible
+		accum 0 trigger_if_equal 0 maindoor_lever_2 open		// TRIGGER_IF_CLOSED
+		accum 0 trigger_if_equal 1 maindoor_lever_2 close		// TRIGGER_IF_OPEN
+	}	
+	
+	trigger close
+	{
+		halt
+		playsound sound/movers/misc/garage_door_start_01.wav  volume 255
+		gotomarker maindoor_lever_2_closed 16 wait
+		accum 0 set 0	// CLOSED
+		stopsound
+		trigger maindoor_left activate
+		trigger maindoor_right activate
+		wait 1000
+		setstate maindoor_hint default
+	}
+	
+	trigger open
+	{
+		playsound sound/movers/misc/garage_door_start_01.wav  volume 255
+		gotomarker maindoor_lever_2_open 16 wait
+		accum 0 set 1		// OPEN
+		stopsound
+		trigger maindoor_left activate
+		trigger maindoor_right activate
+		wait 1000
+		setstate maindoor_hint default
+	}
+}
+
+maindoor_right
+{
+	// ACCUM 0:
+	//	0-CLOSED
+	//	1-OPENING
+	//	2-OPEN
+	//	3-CLOSING
+	trigger activate
+	{
+		accum 0 trigger_if_equal 0 maindoor_right open				// IF_CLOSED
+		accum 0 trigger_if_equal 1 maindoor_right stop_and_close	// IF_OPENING
+		accum 0 trigger_if_equal 2 maindoor_right close				// IF_OPEN
+		accum 0 trigger_if_equal 3 maindoor_right stop_and_open		// IF_CLOSING
+	}
+	
+	trigger stop_and_close
+	{
+		halt
+		stopsound
+		playsound sound/movers/misc/big_gate3.wav volume 255
+		wait 1968	// wait for wav to play
+		trigger self close
+	}
+	
+	trigger stop_and_open
+	{
+		halt
+		stopsound
+		playsound sound/movers/misc/big_gate3.wav volume 255
+		wait 1968	// wait for wav to play
+		trigger self open
+	}
+	
+	trigger close
+	{
+		accum 0 set 3	// CLOSING
+		playsound sound/movers/misc/big_gate2.wav looping  volume 255
+		gotomarker maindoor_right_closed 45 wait
+		accum 0 abort_if_not_equal 3	// ABORT_IF_NOT_CLOSING
+		stopsound
+		playsound sound/movers/misc/big_gate3.wav  volume 255
+		wait 1968	// wait for wav to play
+		accum 0 set 0	// CLOSED
+	}
+	
+	trigger open
+	{
+		accum 0 set 1	// OPENING
+		playsound sound/movers/misc/big_gate2.wav looping  volume 255
+		gotomarker maindoor_right_open 45 wait
+		accum 0 abort_if_not_equal 1	// ABORT_IF_NOT_OPENING
+		stopsound
+		playsound sound/movers/misc/big_gate3.wav  volume 255
+		wait 1968	// wait for wav to play
+		accum 0 set 2	// OPEN
+	}
+}
+
+maindoor_left
+{
+	// ACCUM 0:
+	//	0-CLOSED
+	//	1-OPENING
+	//	2-OPEN
+	//	3-CLOSING
+	spawn
+	{
+		wait 200
+		remapshader textures/etl_lights/lights_neutral	textures/etl_lights/lights_green
+		remapshaderflush
+	}
+	
+	trigger activate
+	{
+		accum 0 trigger_if_equal 0 maindoor_left open				// IF_CLOSED
+		accum 0 trigger_if_equal 1 maindoor_left stop_and_close		// IF_OPENING
+		accum 0 trigger_if_equal 2 maindoor_left close				// IF_OPEN
+		accum 0 trigger_if_equal 3 maindoor_left stop_and_open		// IF_CLOSING
+	}
+	
+	trigger stop_and_close
+	{
+		halt
+		trigger maindoor_rotator stop
+		remapshader textures/etl_lights/lights_neutral	textures/etl_lights/lights_neutral
+		remapshaderflush
+		stopsound
+		playsound sound/movers/misc/big_gate3.wav volume 255
+		wait 1968	// wait for wav to play
+		trigger self close
+	}
+	
+	trigger stop_and_open
+	{
+		halt
+		trigger maindoor_rotator stop
+		remapshader textures/etl_lights/lights_neutral	textures/etl_lights/lights_neutral
+		remapshaderflush
+		stopsound
+		playsound sound/movers/misc/big_gate3.wav volume 255
+		wait 1968	// wait for wav to play
+		trigger self open
+	}
+	
+	trigger close
+	{
+		accum 0 set 3	// CLOSING
+		remapshader textures/etl_lights/lights_neutral	textures/etl_lights/lights_neutral
+		remapshaderflush
+		wm_announce "Main blast door closing!"
+		trigger maindoor_rotator close
+		playsound sound/movers/misc/big_gate2.wav looping  volume 255
+		gotomarker maindoor_left_closed 45 wait
+		accum 0 abort_if_not_equal 3	// ABORT_IF_NOT_CLOSING
+		setstate maindoor_hint invisible
+		stopsound
+		trigger maindoor_rotator stop
+		playsound sound/movers/misc/big_gate3.wav  volume 255
+		wait 1968	// wait for wav to play
+		accum 0 set 0	// CLOSED
+		setstate maindoor_hint default
+		remapshader textures/etl_lights/lights_neutral	textures/etl_lights/lights_green
+		remapshaderflush
+	}
+	
+	trigger open
+	{
+		accum 0 set 1	// OPENING
+		remapshader textures/etl_lights/lights_neutral	textures/etl_lights/lights_neutral
+		remapshaderflush
+		wm_announce "Main blast door opening!"
+		trigger maindoor_rotator open
+		playsound sound/movers/misc/big_gate2.wav looping  volume 255
+		gotomarker maindoor_left_open 45 wait
+		accum 0 abort_if_not_equal 1	// ABORT_IF_NOT_OPENING
+		setstate maindoor_hint invisible
+		trigger maindoor_rotator stop
+		stopsound
+		playsound sound/movers/misc/big_gate3.wav  volume 255
+		wait 1968	// wait for wav to play
+		accum 0 set 2	// OPEN
+		setstate maindoor_hint default
+		remapshader textures/etl_lights/lights_neutral	textures/etl_lights/lights_red
+		remapshaderflush
+	}
+}
+
+maindoor_rotator
+{
+	spawn
+	{
+		wait 333
+		disablespeaker generator_speaker
+	}
+	
+	trigger open
+	{
+		enablespeaker generator_speaker
+		setrotation 0 0 -250
+		remapshader textures/etl_props/cable_m01		textures/etl_props/cable_moving_inverted
+		remapshaderflush
+	}
+	
+	trigger close
+	{
+		enablespeaker generator_speaker
+		setrotation 0 0 250
+		remapshader textures/etl_props/cable_m01		textures/etl_props/cable_moving
+		remapshaderflush
+	}
+	
+	trigger stop
+	{
+		stoprotation
+		remapshader textures/etl_props/cable_m01		textures/etl_props/cable_m01
+		remapshaderflush
+		disablespeaker generator_speaker
+	}
+}
+
+generator_perma1
+{
+	spawn
+	{
+		wait 200
+		setrotation -250 0 0
+	}
+}
+
+generator_perma2
+{
+	spawn
+	{
+		wait 200
+		setrotation -250 0 0
+	}
+}
+
+generator_pistons1
+{
+	spawn
+	{
+		wait 100
+		trigger self move
+	}
+	
+	trigger move
+	{
+		faceangles 20 180 0 120 
+		faceangles 0 180 0 120 
+		trigger self move
+	}
+}
+
+generator_pistons2
+{
+	spawn
+	{
+		wait 200
+		trigger self move
+	}
+	
+	trigger move
+	{
+		faceangles 20 180 0 120 
+		faceangles 0 180 0 120 
+		trigger self move
+	}
+}
+
+generator_pistons3
+{
+	//ACCUM 0: DOOR CONTROLS 0-BUILT; 1-DESTROYED
+	spawn
+	{
+		wait 100
+		trigger self move
+	}
+	
+	trigger move
+	{
+		faceangles 20 180 0 120 
+		faceangles 0 180 0 120
+		accum 0 abort_if_equal 1		
+		trigger self move
+	}
+	
+	trigger stop
+	{
+		accum 0 set 1
+	}	
+}
+
+generator_pistons4
+{
+	//ACCUM 0: DOOR CONTROLS 0-BUILT; 1-DESTROYED
+	spawn
+	{
+		wait 200
+		trigger self move
+	}
+	
+	trigger move
+	{
+		faceangles 20 180 0 120 
+		faceangles 0 180 0 120 
+		accum 0 abort_if_equal 1
+		trigger self move
+	}
+	
+	trigger stop
+	{
+		accum 0 set 1
+	}	
+}
+
+world_clip
+{
+	spawn
+	{
+		wait 250
+		setstate spawn_ammo invisible				// Disable Allied spawn ammo cabinets
+		setstate spawn_ammo_model invisible			// Disable Allied spawn ammo cabinets
+		setstate spawn_health invisible				// Disable Allied spawn health cabinets
+		setstate spawn_health_model invisible		// Disable Allied spawn health cabinets
+		wait 250
+		globalaccum 2 trigger_if_equal 1 world_clip spawn_cabinets
+	}
+	
+	trigger spawn_cabinets
+	{
+		globalaccum 2 abort_if_not_equal 1
+		setstate spawn_ammo default					// Enable Allied spawn ammo cabinets
+		setstate spawn_ammo_model default			// Enable Allied spawn ammo cabinets
+		setstate spawn_health default				// Enable Allied spawn health cabinets
+		setstate spawn_health_model default			// Enable Allied spawn health cabinets
+		setstate spawn_ammo_dest invisible			// Hide placeholder
+		setstate spawn_health_dest invisible		// Hide placeholder
+	}
+}
