@@ -124,7 +124,7 @@ secret_exit
 		wm_teamvoiceannounce 1 "allies_hq_objective_captured"
 
 		wm_setwinner 1
-		wait 500
+		//wait 500 // no wait at end because comp
 		wm_endround 
 	}
 }

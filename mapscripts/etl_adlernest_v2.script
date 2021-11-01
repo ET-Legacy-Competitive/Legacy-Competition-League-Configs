@@ -97,7 +97,7 @@ documents
 		remapshader "models/mapobjects/tanks_sd/bits_r"							"models/mapobjects/tanks_sd/bits_r"	
 		remapshaderflush
 		
-		wait 100
+		//wait 100 // remove wait because comp
 		wm_endround
 	}
 }

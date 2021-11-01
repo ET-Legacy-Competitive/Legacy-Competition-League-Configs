@@ -102,7 +102,7 @@ game_manager
 	trigger endgame
 	{
 		
-   		wait 500
+   		//wait 500 // remove wait because comp
    		
 		wm_objective_status 2 1 1
 		wm_objective_status 2 0 2

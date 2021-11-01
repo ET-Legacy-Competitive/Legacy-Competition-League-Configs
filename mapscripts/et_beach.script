@@ -304,7 +304,7 @@ game_manager
 		wm_teamvoiceannounce 1 "objective_allies_secured"
 
 		//mortis reduce silly wait state from 1500 to 50
-		wait 50
+		//wait 50 // remove completely because why not
 		// End the round
 		wm_endround
 	}
