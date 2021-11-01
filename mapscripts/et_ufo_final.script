@@ -186,7 +186,7 @@ allied_obj4
 		wm_objective_status 4 1 1
 
 		wm_announce	"Allies Transmitted the UFO Documents!"
-		wait 1500
+		//wait 1500 // remove wait because comp
 
 		wm_setwinner 1
 
