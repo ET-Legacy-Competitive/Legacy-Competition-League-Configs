@@ -1,0 +1,297 @@
+game_manager
+{
+	spawn
+	{
+		wm_axis_respawntime 30
+		wm_allied_respawntime 25
+		wm_set_round_timelimit 10
+
+		// Objectives
+		// 1 "Transmit the Quiz Answers"
+		// 2 "Destroy the Bunker Door"
+		// 3 "Destroy the Storage Wall"
+		// 4 "Capture the Inner Compound"
+
+		wm_number_of_objectives	4
+
+		wm_objective_status 1 0 0
+		wm_objective_status 1 1 0
+		wm_objective_status 2 0 0
+		wm_objective_status 2 1 0
+		wm_objective_status 3 0 0
+		wm_objective_status 3 1 0
+		wm_objective_status 4 0 0
+		wm_objective_status 4 1 0
+
+		// Set Defending Team for SW Mode
+		wm_set_defending_team 0
+
+		// If the round timer expires, the Nazis have won, so set the current winning team
+		// Set the round winner:  0 == AXIS, 1 == ALLIED
+		wm_setwinner 0
+
+		wait 500
+		setautospawn "Inner Compound Flag" 1
+		setautospawn "Axis Side" 0
+
+		// Accum #1 will be the state of objective number one
+		accum 1 set 0
+	}
+		
+	trigger quiz_answers_transmitted
+	{
+		wm_objective_status 1 0 2
+		wm_objective_status 1 1 1
+
+		accum 1 set 1
+
+		wm_announce "Allies have transmitted the Quiz Answers!"	
+		
+		trigger game_manager checkgame
+	}
+		
+	trigger bunker_door_destroyed
+	{		
+		wm_objective_status 2 0 2
+		wm_objective_status 2 1 1
+
+		wm_announce	"Allies have breached the Bunker Door!"
+
+		wm_teamvoiceannounce 0 "radar_axis_entrance2_destroyed"
+		wm_teamvoiceannounce 1 "radar_allies_entrance2_destroyed"
+
+	}
+	
+	trigger storage_wall_destroyed
+	{		
+		wm_objective_status 3 0 2
+		wm_objective_status 3 1 1
+
+		wm_announce	"Allies have breached the Storage Wall!"
+
+		wm_teamvoiceannounce 0 "radar_axis_entrance1_destroyed"
+		wm_teamvoiceannounce 1 "radar_allies_entrance1_destroyed"
+
+		trigger storage_wall_mover kill
+		trigger storage_wall_trigger kill
+	}
+		
+	trigger flag_blue
+	{
+		// Change the objective state internally, so UI can update, etc.
+		// Allied takes control of checkpoint #1
+		wm_objective_status 4 0 2
+		wm_objective_status 4 1 1
+
+		// Some kind of UI pop-up to alert players
+		wm_announce	"Allies have captured the Inner Compound!"
+		setstate innerflagspawn default
+		setstate south_flag0 default
+		setautospawn "Inner Compound Flag" 1
+
+		wm_teamvoiceannounce 0 "radar_axis_bunker_captured"
+		wm_teamvoiceannounce 1 "radar_allies_bunker_captured"
+
+
+	}
+
+	trigger flag_red
+	{
+		// Change the objective state internally, so UI can update, etc.
+		// Axis takes control of checkpoint #1
+		wm_objective_status 4 0 1
+		wm_objective_status 4 1 2
+
+		// Some kind of UI pop-up to alert players
+		wm_announce	"Axis have reclaimed the Inner Compound!"
+		setstate innerflagspawn invisible
+		setstate south_flag0 invisible
+		setautospawn "Allied Side" 1
+
+		wm_teamvoiceannounce 0 "radar_axis_bunker_reclaimed"
+		wm_teamvoiceannounce 1 "radar_allies_bunker_reclaimed"
+	}
+
+	trigger checkgame
+	{
+		accum 1 abort_if_not_equal 1
+
+		// Set the round winner:  0 == AXIS, 1 == ALLIED
+		wm_setwinner 1
+
+		// End the round
+		wm_endround
+	}
+}
+
+quiz_answers
+{
+	death
+	{
+		trigger game_manager quiz_answers_transmitted
+	}
+}
+
+docs
+{
+	trigger stolen
+	{ 
+		setstate docs_cm_marker invisible
+	} 
+	
+	trigger returned
+	{ 
+		setstate docs_cm_marker default
+	} 
+	
+	trigger captured
+	{ 
+	} 
+}
+
+bunker_door
+{
+	spawn
+	{
+		wait 50
+		constructible_class	3
+	}
+
+	death
+	{
+		trigger game_manager bunker_door_destroyed
+	}
+}
+
+south_flag
+{
+	trigger axis_capture
+	{
+		trigger game_manager flag_red
+	}
+
+	trigger allied_capture
+	{
+		trigger game_manager flag_blue
+	}
+}
+
+storage_wall_explosive
+{
+	spawn
+	{
+		wait 50
+		constructible_class	3
+	}
+	
+	death
+	{
+		trigger game_manager storage_wall_destroyed
+	}
+}
+
+storage_wall_lever
+{
+	spawn
+	{
+	}
+
+	trigger down
+	{
+		gotomarker storage_wall_lever_down 50 wait
+		playsound sound/movers/switches/butn2.wav
+		trigger storage_wall_mover close
+	}
+
+	trigger up
+	{
+		gotomarker storage_wall_lever_up 50 wait
+		playsound sound/movers/switches/switch.wav
+		trigger storage_wall_mover open
+	}
+}
+
+storage_wall_trigger
+{
+	spawn
+	{
+		wait 100
+		accum 5 bitreset 1 // door closed
+	}
+	trigger main
+	{
+		accum 5 bitset 2 // ugly branch helper :X
+		trigger storage_wall_trigger branch
+		setstate storage_wall_hint invisible
+		wait 1000
+		setstate storage_wall_hint default
+	}
+	trigger branch
+	{
+		trigger storage_wall_trigger up
+		accum 5 abort_if_not_bitset 2 // don't close again immediately
+		trigger storage_wall_trigger down
+	}
+	trigger up
+	{
+		accum 5 abort_if_bitset 1
+		accum 5 bitset 1
+		accum 5 bitreset 2
+		trigger storage_wall_lever up
+	}
+	trigger down
+	{
+		accum 5 abort_if_not_bitset 1
+		accum 5 bitreset 1
+		trigger storage_wall_lever down
+	}
+	
+	trigger kill
+	{
+	    remove
+	}
+}
+
+storage_wall_mover
+{
+	spawn
+	{
+	}
+	
+	trigger open
+	{
+		wait 500
+		playsound sound/scenaric/assault/big_gate1.wav
+		wait 400
+		playsound sound/scenaric/assault/big_gate2.wav looping forever
+		gotomarker storage_wall_open 32 wait
+		stopsound
+		playsound sound/scenaric/assault/big_gate3.wav
+	}
+
+	trigger close
+	{
+		wait 500
+		playsound sound/scenaric/assault/big_gate1.wav
+		wait 400
+		playsound sound/scenaric/assault/big_gate2.wav looping forever
+		gotomarker storage_wall_closed 32 wait
+		stopsound
+		playsound sound/scenaric/assault/big_gate3.wav
+	}
+	
+	trigger kill 
+	{
+		remove
+	}
+}
+
+innerflagspawn
+{
+	spawn
+	{
+		wait 50
+		setstate innerflagspawn invisible
+		setstate south_flag0 invisible
+	}
+}
