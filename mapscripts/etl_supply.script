@@ -1212,7 +1212,8 @@ truck
 		playsound sound/vehicles/truck/truck_idle.wav looping volume 127
 		// Reset the truck into correct position
 		followspline 0 truckpath0 10000 wait length 304
-		// followspline 1 truckpath0 10000 wait length 304
+		followspline 1 truckpath0 10000 wait length 304
+		followspline 0 truckpath0 10000 wait length 304
 		accum 3 set 1
 		// accum 3 set 68	//TEST TELEPORTER
 	}
@@ -2540,7 +2541,7 @@ truck_trigger
 {
 	spawn
 	{
-		wait 250
+		wait 50
 		attachtotag truck tag_wback
 	}
 }
@@ -2549,7 +2550,7 @@ truck_toi
 {
 	spawn
 	{
-		wait 250
+		wait 50
 		attachtotag truck tag_wback
 	}
 }

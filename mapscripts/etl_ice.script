@@ -6,6 +6,7 @@
 // GLOBALACCUM 2:	Dynamically handle team voice announcements
 //		BIT 0 = MAIN ENTRANCE DESTROYED
 //		BIT 1 = SIDE_ENTRANCE_DESTROYED
+// GLOBALACCUM 3:	Additional spawn slots at flag spawn (0-disabled; 1-enabled)
 
 game_manager
 {
@@ -50,8 +51,9 @@ game_manager
 		wait 1000
 		// Toggle the line of the respective setting you want to change by (un-)commenting.
 		//
-		// globalaccum 0 set 1					// Additional health and ammo cabinets in the southern tunnel (default no)
-		//globalaccum 1 set 1						// Secure Axis flag when Side Wall destroyed (default yes)
+		// globalaccum 0 set 1				// Additional health and ammo cabinets in the southern tunnel (default no)
+		// globalaccum 1 set 1				// Secure Axis flag when Side Wall destroyed (default no)
+		globalaccum 3 set 1				// Additional spawn slots at flag spawn. (default yes)
 		// ===================================================================================
 		
 		trigger world_clip load_cabinets
@@ -298,7 +300,6 @@ forward_bunker
 	spawn
 	{
 		wait 200
-		// setstate forward_bunker_spawn invisible
 		setstate forward_bunker_wobj invisible
 		setstate forward_bunker_marker invisible
 		accum 0 set -1
@@ -310,8 +311,6 @@ forward_bunker
 	{
 		accum 0 abort_if_equal 0
 		accum 0 set 0
-		alertentity forward_bunker_spawn
-		// setstate forward_bunker_spawn default
 		setstate forward_bunker_wobj default
 		setstate forward_bunker_marker default
 
@@ -337,7 +336,6 @@ forward_bunker
 	trigger allied_capture
 	{
 		accum 0 set 1
-		// setstate forward_bunker_spawn invisible
 		setstate forward_bunker_wobj invisible
 		setstate forward_bunker_marker invisible
 
@@ -386,6 +384,16 @@ forward_bunker
 
 		
 		accum 0 set 0
+	}
+}
+
+forward_bunker_spawn_west
+{
+	spawn
+	{
+		wait 200
+		globalaccum 3 abort_if_equal 1
+		remove
 	}
 }
 
