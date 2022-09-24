@@ -181,12 +181,7 @@ allied_cp
 		alertentity cp_spawns
 
 		enablespeaker allied_compost_sound
-      
-        // If first time, then set new spawn as default
-        accum 3 abort_if_equal 1
-        accum 3 set 1      
-      
-        setautospawn    "CP Spawn"   1
+		setautospawn    "CP Spawn"   1
 	}
 
 	death
