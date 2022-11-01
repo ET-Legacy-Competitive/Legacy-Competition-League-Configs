@@ -2,6 +2,16 @@ game_manager
 {
 	spawn
 	{
+		create
+        {
+	        scriptName "back_spawn_roof_patch"
+	        classname "func_fakebrush"
+	        origin "-1390 160 568"
+	        contents 1  // CONTENTS_SOLID
+	        mins "-290 -160 0"
+	        maxs "290 160 10"
+        }
+
 		// fakebrush stairs for the invisible wall near flag
 		create
 		{
