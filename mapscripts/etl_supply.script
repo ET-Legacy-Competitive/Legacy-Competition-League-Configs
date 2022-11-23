@@ -13,6 +13,11 @@
 //	BIT 0 = Forward Bunker
 //	BIT 1 = CP hut
 //	BIT 2 = Axis Depot Spawn
+// GLOBALACCUM 4:	OPTIONAL MORE RESPONSIVE TRUCK
+// 0 = default behaviour
+// 1 = more responsive truck in all stages
+// 2 = more responsive truck after forward gate destroyed
+// 3 = more responsive truck after both gates destroyed
 
 game_manager
 {
@@ -51,7 +56,7 @@ game_manager
 		// 8: Command Post
 		wm_objective_status 8 1 0
 		wm_objective_status 8 0 0
-		
+
 		// Current status
 		wm_set_main_objective 1 0
 		wm_set_main_objective 1 1
@@ -75,7 +80,7 @@ game_manager
 		wm_teamvoiceannounce 1 "allies_entrances_destroy"
 		wm_teamvoiceannounce 1 "allies_bunker_capture"
 		// *---------------------------------------------------------------------------------*
-		
+
 		// Initial setstates
 		wait 100
 		setstate forward_ammo invisible
@@ -101,20 +106,23 @@ game_manager
 		setstate depot_health invisible
 		setstate depot_health_model invisible
 		setstate depot_cabinets_clip invisible
-		
-		
+
+
 		//====OPTIONAL SETTINGS==============================================================
 		wait 1000
 		// Toggle the line of the respective setting you want to change by (un-)commenting.
 		//
 		setdamagable truck 0					// Make truck invulnerable
 		// setstate crane_controls_TJ invisible	// Clip brush in crane controls window	(enabled by default)
-		setstate radio_1_speaker invisible	// Radio in forward bunker spawn (enabled by default)
-		setstate radio_2_speaker invisible	// Radio at depot gates (enabled by default)
+		// setstate radio_1_speaker invisible	// Radio in forward bunker spawn (enabled by default)
+		// setstate radio_2_speaker invisible	// Radio at depot gates (enabled by default)
 		// globalaccum 2 set 1					// Axis CP spawn (disabled by default)
 		// globalaccum 3 bitset 0				// Forward Spawn cabinets (disabled by default)
 		// globalaccum 3 bitset 1				// CP Spawn cabinets (disabled by default)
 		// globalaccum 3 bitset 2				// Depot Spawn cabinets (disabled by default)
+		globalaccum 4 set 2					// More responsive truck (disabled by default)
+		// trigger bunker1 remove				// Uncomment this line to open access to the first bunker
+		// trigger bunker2 remove				// Uncomment this line to open access to the second bunker
 		// ===================================================================================
 	}
 }
@@ -128,14 +136,14 @@ world_clip
 		trigger cp_health init
 		trigger depot_health init
 	}
-	
+
 	trigger axis_cp_spawn_enable
 	{
 		globalaccum 2 abort_if_equal 0
 		setstate axis_cp_spawns_wobj default
 		setstate axis_cp_spawns default
 	}
-	
+
 	trigger axis_cp_spawn_disable
 	{
 		globalaccum 2 abort_if_equal 0
@@ -189,15 +197,21 @@ forward_spawn_flag
 	{
 		wait 100
 		disablespeaker flag_sound
+		remapshader models/multiplayer/flagpole/american textures/common/nodraw
+		remapshader models/multiplayer/flagpole/german textures/common/nodraw
+		remapshaderflush
 	}
-	
+
 	// ACCUM 0:	0 = Axis, 1 = Allied
 	trigger axis_capture
 	{
 		enablespeaker flag_sound
+		remapshader models/multiplayer/flagpole/american textures/common/nodraw
+		remapshader models/multiplayer/flagpole/german models/multiplayer/flagpole/german
+		remapshaderflush
 		accum 0 abort_if_equal 0	// Abort if already Axis
 		accum 0 set 0				// Set Axis
-		
+
 		setautospawn "Forward Bunker Spawn" 0
 		setautospawn "Allied Start" 1
 		alertentity forward_spawn_wobj
@@ -215,6 +229,9 @@ forward_spawn_flag
 	trigger allied_capture
 	{
 		enablespeaker flag_sound
+		remapshader models/multiplayer/flagpole/american models/multiplayer/flagpole/american
+		remapshader models/multiplayer/flagpole/german textures/common/nodraw
+		remapshaderflush
 		accum 0 abort_if_equal 1	// Abort if already Allied
 		accum 0 set 1				// Set Allied
 
@@ -237,10 +254,10 @@ forward_spawn_flag
 		trigger forward_spawn_axis remove
 		setstate forward_spawn_flag invisible
 		disablespeaker flag_sound
-		
+
 		accum 0 abort_if_equal 1	// Abort if already Allied
 		accum 0 set 1				// Set Allied
-		
+
 		setautospawn "Axis Depot Spawn" 0
 		setautospawn "Forward Bunker Spawn" 1
 		alertentity forward_spawn_wobj
@@ -267,7 +284,8 @@ forward_gate
 	death
 	{
 		trigger forward_spawn_flag secure	// Switch forward spawn permanently to allies
-		
+		trigger truck forward_gate_blown
+
 		globalaccum 1 bitset 0
 
 		wm_objective_status 1 0 2
@@ -288,7 +306,7 @@ forward_gate
 		wm_teamvoiceannounce 1 "allies_hq_compost_construct"
 		wm_addteamvoiceannounce 1 "allies_hq_compost_construct"
 		// *---------------------------------------------------------------------------------*
-		
+
 		globalaccum 3 abort_if_not_bitset 0 // Abort if forward spawn cabinets are not desired
 		setstate forward_ammo default
 		setstate forward_ammo_model default
@@ -306,7 +324,7 @@ forward_spawn_gate
 		wait 200
 		constructible_class 3	//Dyno
 	}
-	
+
 	death
 	{
 		//wm_announce "The Allies have opened up the Forward spawn rear exit!"
@@ -326,6 +344,7 @@ depot_gate
 	{
 		alertentity sound_alarm		// Sound alarms
 		globalaccum 1 bitset 1
+		trigger truck depot_gate_blown
 
 		wm_objective_status 2 0 2
 		wm_objective_status 2 1 1
@@ -354,7 +373,7 @@ west_depot_wall
 		wm_objective_status 6 0 2
 		wm_objective_status 6 1 1
 		setstate west_depot_wall_debris default
-		
+
 		// *----------------------------------- vo ------------------------------------------*
 		// wm_announce "The Allies have breached the Depot's west wall!"
 		wm_announce "The Allies have breached the West Depot Wall!"
@@ -413,7 +432,7 @@ fence
 		setstate fence_materials default
 		setstate fence_materials_clip default
 		setstate fence_materials_flag default
-		
+
 		// *----------------------------------- vo ------------------------------------------*
 		wm_announce "The Depot Fence has been destroyed."
 		wm_teamvoiceannounce 0 "axis_depotdef_destroyed"
@@ -470,7 +489,7 @@ axis_cp
 
 		wm_objective_status 8 0 1
 		wm_objective_status 8 1 2
-		
+
 		setchargetimefactor 0 soldier 0.75
 		setchargetimefactor 0 lieutenant 0.75
 		setchargetimefactor 0 medic 0.75
@@ -485,7 +504,7 @@ axis_cp
 		wm_removeteamvoiceannounce 0 "axis_hq_compost_construct"
 		enablespeaker axis_cp_sound
 		// *---------------------------------------------------------------------------------*
-		
+
 		globalaccum 3 abort_if_not_bitset 1 // Abort if CP spawn cabinets are not desired
 		setstate cp_ammo default
 		setstate cp_ammo_model default
@@ -506,23 +525,23 @@ axis_cp
 
 		wm_objective_status 8 0 0
 		wm_objective_status 8 1 0
-		
+
 		setchargetimefactor 0 soldier 1
 		setchargetimefactor 0 lieutenant 1
 		setchargetimefactor 0 medic 1
 		setchargetimefactor 0 engineer 1
 		setchargetimefactor 0 covertops 1
 		sethqstatus 0 0
-		
+
 		// *----------------------------------- vo ------------------------------------------*
 		wm_announce "^5The Allies have destroyed the Axis Command Post!"
 		wm_addteamvoiceannounce 0 "axis_hq_compost_construct"
 		wm_addteamvoiceannounce 1 "allies_hq_compost_construct"
 		wm_teamvoiceannounce 0 "axis_hq_compost_damaged"
-		wm_teamvoiceannounce 1 "allies_hq_compost_construct"	
+		wm_teamvoiceannounce 1 "allies_hq_compost_construct"
 		disablespeaker axis_cp_sound
 		// *---------------------------------------------------------------------------------*
-		
+
 		globalaccum 3 abort_if_not_bitset 1 // Abort if CP spawn cabinets are not desired
 		setstate cp_ammo invisible
 		setstate cp_ammo_model invisible
@@ -567,17 +586,17 @@ allied_cp
 		setstate allied_cp_spawns_wobj default
 		setstate antenna default
 		setstate antenna_coronas default
-		
+
 		wm_objective_status 8 0 2
 		wm_objective_status 8 1 1
-		
+
 		setchargetimefactor 1 soldier 0.75
 		setchargetimefactor 1 lieutenant 0.75
 		setchargetimefactor 1 medic 0.75
 		setchargetimefactor 1 engineer 0.75
 		setchargetimefactor 1 covertops 0.75
 		sethqstatus 1 1
-		
+
 		// *----------------------------------- vo ------------------------------------------*
 		wm_announce "^5Allied Command Post constructed. Charge speed increased!"
 		wm_teamvoiceannounce 0 "axis_hq_compost_constructed_allies"
@@ -585,7 +604,7 @@ allied_cp
 		wm_removeteamvoiceannounce 1 "allies_hq_compost_construct"
 		enablespeaker allied_cp_sound
 		// *---------------------------------------------------------------------------------*
-		
+
 		globalaccum 3 abort_if_not_bitset 1 // Abort if CP spawn cabinets are not desired
 		setstate cp_ammo default
 		setstate cp_ammo_model default
@@ -607,14 +626,14 @@ allied_cp
 
 		wm_objective_status 8 0 0
 		wm_objective_status 8 1 0
-		
+
 		setchargetimefactor 1 soldier 1
 		setchargetimefactor 1 lieutenant 1
 		setchargetimefactor 1 medic 1
 		setchargetimefactor 1 engineer 1
 		setchargetimefactor 1 covertops 1
 		sethqstatus 1 0
-		
+
 		// *----------------------------------- vo ------------------------------------------*
 		wm_announce "^1The Axis have destroyed the Allied Command Post!"
 		wm_addteamvoiceannounce 0 "axis_hq_compost_construct"
@@ -623,7 +642,7 @@ allied_cp
 		wm_teamvoiceannounce 1 "allies_hq_compost_damaged"
 		disablespeaker allied_cp_sound
 		// *---------------------------------------------------------------------------------*
-		
+
 		globalaccum 3 abort_if_not_bitset 1 // Abort if CP spawn cabinets are not desired
 		setstate cp_ammo invisible
 		setstate cp_ammo_model invisible
@@ -653,19 +672,19 @@ crane_control
 		remapshaderflush
 		disablespeaker crane_sound
 	}
-	
+
 	buildstart final
 	{
 		setstate crane_control_lever underconstruction
 		setstate crane_whiteness underconstruction
 	}
-	
+
 	decayed
 	{
 		setstate crane_control_lever invisible
 		setstate crane_whiteness invisible
 	}
-	
+
 	built final
 	{
 		setstate crane_control_materials invisible
@@ -687,7 +706,7 @@ crane_control
 		wm_teamvoiceannounce 0 "axis_crane_built"
 		wm_teamvoiceannounce 1 "allies_crane_built"
 		// *---------------------------------------------------------------------------------*
-		
+
 		globalaccum 0 bitset 0
 	}
 
@@ -706,13 +725,13 @@ crane_control
 		remapshaderflush
 		remapshaderflush
 		disablespeaker crane_sound
-		
+
 		// *----------------------------------- vo ------------------------------------------*
 		wm_announce "^1The Crane Controls have been destroyed."
 		wm_teamvoiceannounce 0 "axis_crane_destroyed"
 		wm_teamvoiceannounce 1 "allies_crane_destroyed"
 		// *---------------------------------------------------------------------------------*
-		
+
 		globalaccum 0 bitreset 0
 	}
 
@@ -733,19 +752,19 @@ crane_control_hint
 		wait 250
 		setstate crane_control_hint invisible
 	}
-	
+
 	activate
 	{
 		globalaccum 0 abort_if_not_bitset  0	// Abort if crane control not built
 		globalaccum 0 abort_if_not_bitset  1	// Abort if truck not in position
-		
+
 		accum 0 abort_if_equal 1
 		accum 0 set 1
-		
+
 		trigger crane_control_lever run
 		remapshader textures/etl_lights/lights_neutral	textures/etl_lights/lights_green
 		remapshaderflush
-		
+
 		// *----------------------------------- vo ------------------------------------------*
 		wm_announce "^5The Allies have activated the crane!"
 		wm_teamvoiceannounce 0 "axis_gold_taken"
@@ -768,14 +787,14 @@ crane_control_gauge
 		wait 360
 		faceangles 270 0 0 100
 	}
-	
+
 	trigger enable
 	{
 		faceangles 135 0 0 600
 		faceangles 45 0 0 400
 		trigger self wobble
 	}
-	
+
 	trigger wobble
 	{
 		faceangles 55 0 0 400
@@ -784,7 +803,7 @@ crane_control_gauge
 		faceangles 45 0 0 200
 		trigger self wobble
 	}
-	
+
 	trigger disable
 	{
 		halt
@@ -802,7 +821,7 @@ crane_control_lever
 		wait 250
 		setstate crane_control_lever invisible
 	}
-	
+
 	trigger run
 	{
 		// enablespeaker crane_control_lever_sound
@@ -818,31 +837,31 @@ crane_arm
 	{
 		gotomarker crane_path1 100 wait
 	}
-	
+
 	// Load 3:	Move gold crate over truck.
 	trigger load3
 	{
 		gotomarker crane_path2 100 wait
 	}
-	
+
 	trigger crane_arm_sound
 	{
 		stopsound
 		playsound sound/movers/motors/motor_loop_02.wav looping
 	}
-	
+
 	trigger crane_arm_sound_stop
 	{
 		stopsound
 		playsound sound/movers/motors/motor_end_02.wav
 	}
-	
+
 	trigger crane_rope_sound
 	{
 		stopsound
 		playsound sound/movers/motors/motor_loop_01.wav looping
 	}
-	
+
 	trigger crane_rope_sound_stop
 	{
 		stopsound
@@ -857,18 +876,18 @@ crane_rope_dummy
 	{
 		gotomarker crane_path1 100 wait
 		trigger crane_arm crane_arm_sound_stop
-		
+
 		// wait 100
 		// setstate gold_crate_support default
 		// wait 400
 		wait 500
-		
+
 		setstate crane_rope_1 default
 		setstate crane_rope_2 default
 		setstate crane_rope_3 default
 		setstate crane_rope_4 default
 		setstate crane_rope_dummy invisible
-		
+
 		trigger crane_arm crane_rope_sound
 		trigger gold_crate load2
 		trigger gold_crate_support load2
@@ -888,13 +907,13 @@ crane_rope_1
 		wait 150
 		setstate crane_rope_1 invisible
 	}
-	
+
 	// Load 2:	Lift gold crate.
 	trigger load2
 	{
 		gotomarker crane_path1 100 wait
 	}
-	
+
 	// Load 3:	Move gold crate over truck.
 	trigger load3
 	{
@@ -909,19 +928,19 @@ crane_rope_2
 		wait 150
 		setstate crane_rope_2 invisible
 	}
-	
+
 	// Load 2:	Lift gold crate.
 	trigger load2
 	{
 		gotomarker crane_path1 100 wait
 	}
-	
+
 	// Load 3:	Move gold crate over truck.
 	trigger load3
 	{
 		gotomarker crane_path2 100 wait
 	}
-	
+
 	// Load 4:	Lower gold crate onto truck.
 	trigger load4
 	{
@@ -936,19 +955,19 @@ crane_rope_3
 		wait 150
 		setstate crane_rope_3 invisible
 	}
-	
+
 	// Load 2:	Lift gold crate.
 	trigger load2
 	{
 		gotomarker crane_path1 100 wait
 	}
-	
+
 	// Load 3:	Move gold crate over truck.
 	trigger load3
 	{
 		gotomarker crane_path2 100 wait
 	}
-	
+
 	// Load 4:	Lower gold crate onto truck.
 	trigger load4
 	{
@@ -963,15 +982,15 @@ crane_rope_4
 		wait 150
 		setstate crane_rope_4 invisible
 	}
-	
+
 	// Load 2:	Lift gold crate.
 	trigger load2
 	{
 		gotomarker crane_path1 100 wait
 		trigger crane_arm crane_rope_sound_stop
-		
+
 		wait 500
-		
+
 		trigger crane_arm crane_arm_sound
 		trigger gold_crate load3
 		trigger gold_crate_support load3
@@ -981,15 +1000,15 @@ crane_rope_4
 		trigger crane_rope_3 load3
 		trigger crane_rope_4 load3
 	}
-	
+
 	// Load 3:	Move gold crate over truck.
 	trigger load3
 	{
 		gotomarker crane_path2 100 wait
 		trigger crane_arm crane_arm_sound_stop
-		
+
 		wait 500
-		
+
 		trigger crane_arm crane_rope_sound
 		trigger gold_crate load4
 		trigger gold_crate_support load4
@@ -997,35 +1016,35 @@ crane_rope_4
 		trigger crane_rope_3 load4
 		trigger crane_rope_4 load4
 	}
-	
+
 	// Load 4:	Lower gold crate onto truck.
 	trigger load4
 	{
 		gotomarker crane_path3_3 100 wait
 		trigger crane_arm crane_rope_sound_stop
-		
+
 		wait 500
-		
+
 		//Attach crate to truck
 		setstate gold_crate_support invisible
 		setstate gold_crate invisible
 		wait 100
 		setstate truck_crate default
-		
+
 		trigger crane_arm crane_rope_sound
 		trigger crane_rope_2 load3
 		trigger crane_rope_3 load3
 		trigger crane_rope_4 load5
 	}
-	
+
 	// Load 5:	Lift crane rope.
 	trigger load5
 	{
 		gotomarker crane_path2 100 wait
 		trigger crane_arm crane_rope_sound_stop
-		
+
 		wait 500
-		
+
 		trigger crane_arm crane_arm_sound
 		trigger crane_arm load1
 		trigger crane_rope_1 load2
@@ -1033,13 +1052,13 @@ crane_rope_4
 		trigger crane_rope_3 load2
 		trigger crane_rope_4 load6
 	}
-	
+
 	// Load 6:	Move crane back into position.
 	trigger load6
 	{
 		globalaccum 1 bitset 2
 		// setstate gold_crate_support invisible
-		
+
 		wm_objective_status 4 0 2
 		wm_objective_status 4 1 1
 		wm_set_main_objective 5 0
@@ -1050,7 +1069,7 @@ crane_rope_4
 		wm_teamvoiceannounce 0 "axis_gold_secured"
 		wm_teamvoiceannounce 1 "allies_gold_secured"
 		// *---------------------------------------------------------------------------------*
-		
+
 		gotomarker crane_path1 100 wait
 		trigger crane_arm crane_arm_sound_stop
 	}
@@ -1063,13 +1082,13 @@ gold_crate
 	{
 		gotomarker crane_path1 100 wait
 	}
-	
+
 	// Load 3:	Move gold crate over truck.
 	trigger load3
 	{
 		gotomarker crane_path2 100 wait
 	}
-	
+
 	// Load 4:	Lower gold crate onto truck.
 	trigger load4
 	{
@@ -1087,19 +1106,19 @@ gold_crate_support
 		remapshaderflush
 		//setstate gold_crate_support invisible
 	}
-	
+
 	// Load 2:	Lift gold crate.
 	trigger load2
 	{
 		gotomarker crane_path1 100 wait
 	}
-	
+
 	// Load 3:	Move gold crate over truck.
 	trigger load3
 	{
 		gotomarker crane_path2 100 wait
 	}
-	
+
 	// Load 4:	Lower gold crate onto truck.
 	trigger load4
 	{
@@ -1129,12 +1148,12 @@ truck_wfront
 	{
 		attachtotag truck tag_wfront
 	}
-	
+
 	trigger forward
 	{
 		setrotation 130 0 0
 	}
-	
+
 	trigger stop
 	{
 		stoprotation
@@ -1169,7 +1188,7 @@ truck_construct
 		constructible_constructxpbonus 10
 		constructible_destructxpbonus 10
 	}
-	
+
 	built final
 	{
 		alertentity truck
@@ -1204,6 +1223,8 @@ truck_smoke
 //  - bit 0: forward_gate msg already sent?
 //  - bit 1: depot_gate gate msg already sent?
 //  - bit 2: crane_controls msg already sent?
+// accum 6: forward gate check for optionally more responsive truck (1 = gate blown)
+// accum 7: depot gate check for optionally more responsive truck (1 = gate blown)
 truck
 {
 	spawn
@@ -1221,7 +1242,7 @@ truck
 	trigger truck_enable
 	{
 		trigger self stuck_check
-		
+
 		accum 1 abort_if_bitset 3		// stuck check
 		accum 4 set 0					// reset stop counter
 		accum 1 bitreset 8				// reset stop check
@@ -1252,20 +1273,20 @@ truck
 		accum 1 bitset 8				// set stop check
 		trigger self deathcheck
 	}
-	
+
 	rebirth
 	{
 		accum 1 bitreset 9	// VISIBLY ALIVE
 		accum 1 bitreset 7	// ALIVE AGAIN
-		
+
 		// *----------------------------------- vo ------------------------------------------*
 		wm_announce "^5The Truck has been repaired!"
-		
+
 		wm_teamvoiceannounce 1 "allies_hq_truck_repaired"
 		wm_teamvoiceannounce 0 "axis_hq_truck_repaired_allies"
 		// *---------------------------------------------------------------------------------*
 
-		accum 1 bitset 0	// ENTER_SCRIPT_LOCKOUT		
+		accum 1 bitset 0	// ENTER_SCRIPT_LOCKOUT
 		setstate truck_smoke invisible
 		stopsound
 		playsound sound/vehicles/truck/truck_idle.wav looping volume 127
@@ -1277,8 +1298,8 @@ truck
 		accum 1 bitset 7
 
 		accum 3 abort_if_not_equal -1	// ABORT_IF_ESCORT_FINISHED
-		trigger self deathcheck		
-	}		
+		trigger self deathcheck
+	}
 
 	trigger deathcheck
 	{
@@ -1291,14 +1312,14 @@ truck
 
 		// *----------------------------------- vo ------------------------------------------*
 		wm_announce "^1The Truck has been damaged!"
-		
+
 		wm_teamvoiceannounce 1 "allies_hq_truck_damaged_axis"
 		wm_teamvoiceannounce 0 "axis_hq_truck_damaged"
 		// *---------------------------------------------------------------------------------*
-		
+
 		setstate truck_smoke default
 		kill truck_construct
-		
+
 		stopsound
 		playsound sound/vehicles/truck/truck_stop.wav volume 96
 		resetscript
@@ -1318,14 +1339,14 @@ truck
 		wait 500
 		trigger self move
 	}
-	
+
 	trigger run_continue
 	{
 		accum 3 inc 1
 		trigger self stopcheck
 		trigger self move
 	}
-	
+
 	trigger stuck_check
 	{
 		accum 1 bitreset 3
@@ -1340,7 +1361,7 @@ truck
 		accum 3 abort_if_not_equal 26	// SPLINE
 		globalaccum 1 abort_if_bitset 0	// STUCK?
 		accum 1 bitset 3				// STUCK!
-		
+
 		accum 5 abort_if_bitset 0
 		accum 5 bitset 0
 		// *----------------------------------- vo ------------------------------------------*
@@ -1354,7 +1375,7 @@ truck
 		accum 3 abort_if_not_equal 56	// SPLINE
 		globalaccum 1 abort_if_bitset 1	// STUCK?
 		accum 1 bitset 3				// STUCK!
-		
+
 		accum 5 abort_if_bitset 1
 		accum 5 bitset 1
 		// *----------------------------------- vo ------------------------------------------*
@@ -1368,7 +1389,7 @@ truck
 		accum 3 abort_if_not_equal 73	// SPLINE
 		globalaccum 1 abort_if_bitset 2	// STUCK?
 		accum 1 bitset 3				// STUCK!
-		
+
 		accum 5 abort_if_bitset 2
 		accum 5 bitset 2
 		// *----------------------------------- vo ------------------------------------------*
@@ -1398,6 +1419,23 @@ truck
 		trigger truck_wfront stop
 		trigger truck_wback stop
 
+		// default behaviour
+		globalaccum 4 trigger_if_equal 0 truck stopcheck_longwait
+
+		// more responsive truck all map
+		globalaccum 4 trigger_if_equal 1 truck stopcheck_shortwait
+
+		// more responsive truck after 1st gate is blown
+		globalaccum 4 trigger_if_equal 2 truck check_forward_gate
+
+		// more responsive truck after both gates blown
+		globalaccum 4 trigger_if_equal 3 truck check_both_gates
+
+	}
+
+	// original truck behaviour
+	trigger stopcheck_longwait
+	{
 		wait 800
 		playsound sound/vehicles/truck/truck_idle.wav looping volume 127
 		wait 900
@@ -1405,7 +1443,39 @@ truck
 		accum 1 bitreset 0	// script lockout end
 		resetscript
 	}
-	
+
+	// more responsive truck
+	trigger stopcheck_shortwait
+	{
+		wait 25
+		playsound sound/vehicles/truck/truck_idle.wav looping volume 127
+		wait 75
+
+		accum 1 bitreset 0	// script lockout end
+		resetscript
+	}
+
+	trigger check_forward_gate
+	{
+		accum 6 trigger_if_equal 0 truck stopcheck_longwait
+		accum 6 trigger_if_equal 1 truck stopcheck_shortwait
+	}
+
+	trigger check_both_gates
+	{
+		accum 7 trigger_if_equal 0 truck stopcheck_longwait
+		accum 7 trigger_if_equal 1 truck check_forward_gate
+	}
+
+	trigger forward_gate_blown
+	{
+		accum 6 set 1
+	}
+	trigger depot_gate_blown
+	{
+		accum 7 set 1
+	}
+
 	trigger dispatch
 	{
 		accum 3 trigger_if_equal 0 truck run_0
@@ -1532,7 +1602,7 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-	
+
 	trigger run_1
 	{
 		accum 1 bitset 2
@@ -1540,7 +1610,7 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-	
+
 	trigger run_2
 	{
 		accum 1 bitset 2
@@ -1548,7 +1618,7 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-	
+
 	trigger run_3
 	{
 		accum 1 bitset 2
@@ -1564,7 +1634,7 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-	
+
 	trigger run_5
 	{
 		accum 1 bitset 2
@@ -1684,15 +1754,15 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-       
-   trigger run_20 
+
+   trigger run_20
 	{
 		accum 1 bitset 2
 		followspline 0 truckpath20 125 wait length 304
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-       
+
    trigger run_21
    {
 		accum 1 bitset 2
@@ -1771,7 +1841,7 @@ truck
 		trigger self run_continue
 	}
 
-	trigger run_30 
+	trigger run_30
 	{
 		accum 1 bitset 2
 		followspline 0 truckpath30 125 wait length 304
@@ -1850,7 +1920,7 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-       
+
    trigger run_40
    {
 		accum 1 bitset 2
@@ -2048,7 +2118,7 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-       
+
    trigger run_64
    {
 		accum 1 bitset 2
@@ -2072,7 +2142,7 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-       
+
    trigger run_67
    {
 		accum 1 bitset 2
@@ -2250,7 +2320,7 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-	
+
 	trigger run_85
 	{
 		accum 1 bitset 2
@@ -2295,7 +2365,7 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-       
+
    trigger run_90
    {
 		accum 1 bitset 2
@@ -2358,7 +2428,7 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-       
+
    trigger run_97
    {
 		accum 1 bitset 2
@@ -2511,16 +2581,19 @@ truck
 		accum 1 bitreset 2
 		trigger self run_continue
 	}
-       
+
    trigger run_114
    {
 		accum 1 bitset 2
 		trigger truck_crate run_114
 		followspline 0 truckpath114 125 wait length 304
-		
+
 		wait 500
 		wm_setwinner 1
-		
+		remapshader models/multiplayer/flagpole/american models/multiplayer/flagpole/american
+		remapshader models/multiplayer/flagpole/german models/multiplayer/flagpole/german
+		remapshaderflush
+
 		stopsound
 		playsound sound/vehicles/truck/truck_revdown.wav volume 96
 		trigger truck_wfront stop
@@ -2663,7 +2736,7 @@ truck_crate
 	{
 		followspline 0 truckpath91 125 wait length 304
 	}
-	
+
 	trigger run_92
 	{
 		followspline 0 truckpath92 125 wait length 304
@@ -2777,5 +2850,25 @@ truck_crate
 	trigger run_114
 	{
 		followspline 0 truckpath114 125 wait length 304
+	}
+}
+
+bunker1
+{
+	trigger remove
+	{
+		setstate bunker1 invisible
+		wait 100
+		remove
+	}
+}
+
+bunker2
+{
+	trigger remove
+	{
+		setstate bunker2 invisible
+		wait 100
+		remove
 	}
 }
