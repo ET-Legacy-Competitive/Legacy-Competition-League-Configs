@@ -19,8 +19,11 @@ function savePosition(clientNum)
 	playerSprints[clientNum] = sprint
 end
 
--- will print error to console if target hasn't saved yet, but won't crash
 function loadPosition(clientNum)
+	if playerPositions[clientNum] == nil then
+		return
+	end
+
 	pos = playerPositions[clientNum]
 	et.gentity_set(clientNum, "ps.origin", playerPositions[clientNum])
 
@@ -42,8 +45,10 @@ end
 function et_ClientCommand(clientNum, command)
 	if command == "save" then
 		savePosition(clientNum)
+		return 1
 	end
 	if command == "load" then
 		loadPosition(clientNum)
+		return 1
 	end
 end
