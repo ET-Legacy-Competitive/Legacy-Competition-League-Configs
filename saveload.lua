@@ -16,7 +16,7 @@ function savePosition(clientNum)
 	pos = et.gentity_get(clientNum, "ps.origin")
 	playerPositions[clientNum] = pos
 	sprint = et.gentity_get(clientNum, "ps.stats", et.STAT_SPRINTTIME)
-	playerSprints[clientNum] = sprint
+	playerSprints[clientNum] = sprint +.0
 end
 
 function loadPosition(clientNum)
