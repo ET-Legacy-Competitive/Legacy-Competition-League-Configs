@@ -2,6 +2,22 @@ game_manager
 {
 	spawn
 	{
+		create {
+			classname "func_fakebrush"
+			origin "959 -865 96"
+			mins "-7 -86 0"
+			maxs "0 0 296"
+			contents "1"
+			scriptname "nonsolidfix1"
+		}
+		create {
+			classname "func_fakebrush"
+			origin "952 -865 96"
+			mins "-8 -64 0"
+			maxs "0 0 296"
+			contents "1"
+			scriptname "nonsolidfix2"
+		}
 		// Set scenario information
 		wm_axis_respawntime 30
 		wm_allied_respawntime 20
