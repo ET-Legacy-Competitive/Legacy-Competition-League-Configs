@@ -5,7 +5,7 @@ game_manager
 
 		create {
 			classname "func_fakebrush"
-			origin "2880 -1343 -310"
+			origin "2880 -1343 -312"
 			mins "0 0 0"
 			maxs "144 32 24"
 			scriptname "nonsolidfix1"
