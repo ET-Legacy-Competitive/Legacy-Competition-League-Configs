@@ -3,6 +3,78 @@ game_manager
 	spawn
 	{
 
+		create {
+			classname "func_fakebrush"
+			origin "2880 -1343 -312"
+			mins "0 0 0"
+			maxs "144 32 24"
+			scriptname "nonsolidfix1"
+			contents "1"
+		}
+		create {
+			classname "func_fakebrush"
+			origin "2719 -440 -450"
+			mins "-31 -300 0"
+			maxs "0 0 195"
+			scriptname "nonsolidfix2"
+			contents "1"
+		}
+		create {
+			classname "func_fakebrush"
+			origin "2711 -440 -254"
+			mins "-16 -247 0"
+			maxs "0 0 6"
+			scriptname "nonsolidfix3"
+			contents "1"
+		}
+		create {
+			classname "func_fakebrush"
+			origin "2703 -687 -254"
+			mins "-8 -8 0"
+			maxs "8 8 64"
+			scriptname "nonsolidfix4"
+			contents "1"
+		}
+		create {
+			classname "func_fakebrush"
+			origin "2703 -440 -254"
+			mins "-8 -8 0"
+			maxs "8 8 64"
+			scriptname "nonsolidfix5"
+			contents "1"
+		}
+		create {
+			classname "func_fakebrush"
+			origin "2704 -1056 -416"
+			mins "-16 -16 0"
+			maxs "16 16 156"
+			scriptname "nonsolidfix6"
+			contents "1"
+		}
+		create {
+			classname "func_fakebrush"
+			origin "2704 -743 -416"
+			mins "-16 -16 0"
+			maxs "16 16 156"
+			scriptname "nonsolidfix7"
+			contents "1"
+		}
+		create {
+			classname "func_fakebrush"
+			origin "5768 -2208 -486"
+			mins "-8 -8 0"
+			maxs "8 8 130"
+			scriptname "nonsolidfix8"
+			contents "1"
+		}
+		create {
+			classname "func_fakebrush"
+			origin "5768 -2088 -486"
+			mins "-8 -8 0"
+			maxs "8 8 130"
+			scriptname "nonsolidfix9"
+			contents "1"
+		}
 		wait 30
 		wm_allied_respawntime 20
 		wm_axis_respawntime 30
