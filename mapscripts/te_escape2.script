@@ -9,6 +9,17 @@ game_manager
             classname "team_WOLF_checkpoint"
             origin "-3311 1360 128"
         }
+
+	// stop players from grabbing objective through the crack in Tunnel Door
+	create
+	{
+	    classname "func_fakebrush"
+	    origin "-4698 664 -315"
+	    mins "0 0 0"
+	    maxs "10 72 130"
+	    scriptname "tunnel_door_objblock"
+	    contents "1073741824" // CONTENTS_TRIGGER so +activate hits that instead
+	}
         
         // te_escape2 texture fix:
         // remap tree shaders to avoid overwriting pak0.pk3 assets
@@ -171,6 +182,15 @@ door_obj01 //tunnel door
 		wm_objective_status 	4 1 1
 
 		enablespeaker somalarme
+
+		// remove the objective grab blocker
+		trigger tunnel_door_objblock remove_me
+	}
+}
+
+tunnel_door_objblock {
+	trigger remove_me {
+		remove
 	}
 }
 
