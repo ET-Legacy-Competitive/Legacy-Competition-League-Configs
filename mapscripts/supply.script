@@ -169,6 +169,7 @@ forwardgate {
                 trigger forwardflag force_allied        //Switch forward spawn permanently to allies
                 trigger forwardflag kill                //Remove flag
                 trigger truck enable_stage1                //Let truck through
+                trigger truck forwardgate_blown                //Let the truck be more responsive in the 2nd stage
 
                 wm_announce "The Allies have breached the Forward Bunker Gate!"
                 wm_objective_status         1 0 2
@@ -1907,6 +1908,18 @@ truck {
                 trigger truckfrontwheels stop
                 trigger truckbackwheels stop
 
+                // We're in first stage, so
+                // truck should still have the original behaviour to avoid
+                // moving the truck too close to the forward gate
+                accum 6 trigger_if_equal 0 truck stopcheck_longwait
+
+                // 2nd stage and later, truck can be more responsive without as much risk of
+                // moving the truck too far by accident
+                accum 6 trigger_if_equal 1 truck stopcheck_shortwait
+
+        }
+
+        trigger stopcheck_longwait {
                 wait 800
 
                 playsound sound/vehicles/truck/truck_idle.wav looping
@@ -1915,6 +1928,21 @@ truck {
 
                 trigger self script_lockout_stop
                 resetscript
+        }
+
+        trigger stopcheck_shortwait {
+                wait 15
+
+                playsound sound/vehicles/truck/truck_idle.wav looping
+
+                wait 15
+
+                trigger self script_lockout_stop
+                resetscript
+        }
+
+        trigger forwardgate_blown {
+                accum 6 set 1
         }
 
         trigger script_lockout {
